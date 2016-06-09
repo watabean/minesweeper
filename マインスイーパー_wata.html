@@ -1,0 +1,187 @@
+﻿<html>
+<head>
+	<title>watabean</title>
+	<style type="text/css">
+		#disp {
+			height: 50px;
+			width: 900px;
+			text-align: center;
+			background-color: blue;
+		}
+		#base {
+			height: 480px;
+			width: 900px;
+		}
+		.tile {
+			border: 1px solid #888;
+			position: absolute;
+			text-align: center;
+			font-size: 8px;
+		}
+	</style>
+	<script type="text/javascript">
+		(function() {
+			window.onload = function() {
+				var MAX_WIDTH  = 30;
+				var MAX_HEIGHT = 16;
+				var TOTAL_BOM = 99;
+				var WIDTH = 28;
+				var HEIGHT = 28;
+
+				var tileCount = null;
+				var flagCount = null;
+
+				/*
+					0:初期値(未クリック)
+					1:開封済
+					2:地雷
+					3:旗
+				*/
+				var tiles = [];
+				var tileElement = []; 
+
+				init();
+
+				function init() {
+					document.getElementById('flag').textContent = "残り爆弾数：" + TOTAL_BOM;
+					tileCount = MAX_WIDTH * MAX_HEIGHT;
+					flagCount = 0;
+					var bomTotal = TOTAL_BOM;
+					var base = document.getElementById('base');
+
+					for (var i = 0; i < MAX_WIDTH; i++) {
+						tiles[i] = [];
+						tileElement[i] = [];
+						for(var j = 0; j < MAX_HEIGHT; j++) {
+							tiles[i][j] = 0;
+							var tile = document.createElement('div');
+							tile.style.backgroundColor = '#eee';
+							tile.style.width = WIDTH + "px";
+							tile.style.height = HEIGHT + "px";
+							tile.style.left = (i * WIDTH) + "px";
+							tile.style.top = 50 + (j * HEIGHT) + "px";
+							tile.className = "tile";
+
+							(function (n, m) {
+								tile.onclick = function() {
+									//console.log(n + "\t" + m);
+									var isClear = selectTile(n, m, true, n, m);
+									if (isClear) {
+										alert('CLEAR');
+										init();
+									}
+								}
+							})(i, j);
+
+							(function (n, m) {
+								tile.oncontextmenu = function() {
+									setFlag(n, m);
+									return false;
+								}
+							})(i, j);
+
+							tile.innerHTML = '';
+							tileElement[i][j] = tile;
+							base.appendChild(tile);
+						}
+					}
+
+					while(bomTotal > 0) {
+						var i = Math.floor(Math.random() * MAX_WIDTH);
+						var j = Math.floor(Math.random() * MAX_HEIGHT);
+						if(tiles[i][j] != 1) {
+							tiles[i][j] = 1;
+							bomTotal--;
+							tileCount--;
+						}
+					}
+				}
+
+				function setFlag(i, j) {
+					if (tiles[i][j] == 0) {
+						tiles[i][j] = 3;
+						tileElement[i][j].innerHTML = 'f'
+						flagCount++;
+					} else if (tiles[i][j] == 3) {
+						tiles[i][j] = 0;
+						tileElement[i][j].innerHTML = '';
+						flagCount--;
+					}
+					console.log(TOTAL_BOM - flagCount);
+					document.getElementById('flag').textContent = "残り爆弾数：" + (TOTAL_BOM - flagCount);
+				}
+
+				function selectTile(i, j, isClick, orgI, orgJ) {
+					if (isClick && tiles[i][j] == 1) {
+						gameover();
+						if (confirm("GAME ORVER\nRESTART?")) {
+							init();
+						}
+						return false;
+					} else if (tiles[i][j] == 2 || tiles[i][j] == 3) {
+							return false;
+						}
+					tileCount--;
+					tiles[i][j] = 2;
+
+					//クリックされたマスの周囲の地雷数カウント
+					var bomCount = 0;
+					for (var n = i - 1; n <= i + 1; n++) {
+						if (n < 0 || n >= MAX_WIDTH) {
+							continue;
+						}
+						for (var m = j　-　1; m <= j +1; m++) {
+							if (0 <= m && m < MAX_HEIGHT) {
+								if (tiles[n][m] == 1) {
+									bomCount++;
+								}
+							}
+						}
+					}
+					tileElement[i][j].innerHTML = bomCount;
+					tileElement[i][j].style.backgroundColor = '#bbb';
+
+					//周囲の地雷がなかった際の処理(いっぱい開けるやつ)
+					if (bomCount == 0) {
+						for (var n = i - 1; n <= i + 1; n++) {
+							if (n < 0 || n >= MAX_WIDTH) {
+								continue;
+							}
+							for (var m = j - 1; m <= j + 1; m++) {
+								if (0 <= m && m < MAX_HEIGHT) {
+									if ((n == i && m ==　j) || (n == orgI && m == orgJ)) {
+										// OWN TILE or CLICK TILE
+									} else {
+										selectTile(n, m, false, orgI, orgJ);
+									}
+								}
+							}
+						}
+					}
+					if (tileCount == 0) {
+						return true;
+					} else {
+						return false;
+					}
+				}
+
+				/*地雷の箇所の背景色を変え、地雷のマークを表示*/
+				function gameover() {
+					for (var i = 0; i < MAX_WIDTH; i++) {
+						for(var j = 0; j < MAX_HEIGHT; j++) {
+							if (tiles[i][j] == 1) {
+								tileElement[i][j].innerHTML = 'o';
+								tileElement[i][j].style.backgroundColor = '#f00';
+							}
+						}
+					}
+				}
+			}
+		})();
+	</script>
+</head>
+	<body>
+		<div id="disp"><p id="flag">テストなんです。</p></div>
+		<div id="base"></div><
+	</body>
+</html>
