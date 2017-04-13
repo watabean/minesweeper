@@ -1,10 +1,17 @@
 <template>
     <div class="hello">
         <h1>マインスイーパー</h1>
-        <select v-model="level.selected" :disabled="gameStarted">
+        <select v-model="level.selected" :disabled="gameStarted" @change="createPanels">
             <option v-for="level in level.list" :value="level">{{level.name}}</option>
         </select>
-        <div>{{panels}}</div>
+        <table>
+            <tr v-for="y in level.selected.y">
+                <td v-for="x in level.selected.x" @click="open(x, y)" :class="{'opened': getPanel(x, y).opened}">
+                    <template v-if="!getPanel(x, y).opened">　</template>
+                    <template v-if="getPanel(x, y).opened">0</template>
+                </td>
+            </tr>
+        </table>
     </div>
 </template>
 
@@ -20,7 +27,7 @@ export default {
     name: 'MineSweeper',
     data () {
         return {
-            selectedlevel: 'beginner',
+            panels: [],
             level: {
                 list: levels,
                 selected: levels[0]
@@ -28,11 +35,27 @@ export default {
             gameStarted: false
         };
     },
-    computed: {
-        panels () {
-            this.panel = {};
-            console.log(this.level.selected);
-            return this.level.selected;
+    mounted () {
+        this.createPanels();
+    },
+    methods: {
+        open (x, y) {
+            let index = this.panels.findIndex(panel => panel.x === x && panel.y === y);
+            this.panels[index].opened = true;
+        },
+        createPanels () {
+            this.panels = [];
+            for (let x = 1; x <= this.level.selected.x; x++) {
+                for (let y = 1; y <= this.level.selected.y; y++) {
+                    this.panels.push({x: x, y: y, opened: false, mine: false});
+                }
+            }
+        },
+        createMines () {
+
+        },
+        getPanel (x, y) {
+            return this.panels.find(panel => panel.x === x && panel.y === y);
         }
     }
 };
@@ -56,5 +79,14 @@ li {
 
 a {
     color: #42b983;
+}
+
+td {
+    background-color: lightblue;
+    width: 25px;
+    height: 25px;
+}
+td.opened {
+    background-color: white;
 }
 </style>
