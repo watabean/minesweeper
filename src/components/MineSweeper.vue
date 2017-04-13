@@ -35,7 +35,7 @@ export default {
             gameStarted: false
         };
     },
-    mounted () {
+    created () {
         this.createPanels();
     },
     methods: {
