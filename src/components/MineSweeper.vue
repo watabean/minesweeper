@@ -1,17 +1,26 @@
 <template>
     <div class="hello">
         <h1>マインスイーパー</h1>
-        <select v-model="level.selected" :disabled="gameStarted" @change="createPanels">
+        <select v-model="level.selected" :disabled="gameStatus === 'started'" @change="createPanels">
             <option v-for="level in level.list" :value="level">{{level.name}}</option>
         </select>
+        <button @click="createPanels">リセット</button>
         <table>
             <tr v-for="y in level.selected.y">
                 <td v-for="x in level.selected.x" @click="open(x, y)" :class="{'opened': getPanel(x, y).opened}">
                     <template v-if="!getPanel(x, y).opened">　</template>
-                    <template v-if="getPanel(x, y).opened">0</template>
+                    <template v-if="getPanel(x, y).opened && !getPanel(x, y).mine">
+                        <template v-if="getNeighborMineNum(x, y) !== 0">{{getNeighborMineNum(x, y)}}</template>
+                        <template v-else>　</template>
+                    </template>
+                    <template v-if="getPanel(x, y).opened && getPanel(x, y).mine">＊</template>
                 </td>
             </tr>
         </table>
+        <h2>
+            <template v-if="gameStatus === 'gameOver'">ゲームオーバー</template>
+            <template v-if="gameStatus === 'gameClear'">クリア！</template>
+        </h2>
     </div>
 </template>
 
@@ -32,7 +41,7 @@ export default {
                 list: levels,
                 selected: levels[0]
             },
-            gameStarted: false
+            gameStatus: 'beforeStart'
         };
     },
     created () {
@@ -40,8 +49,38 @@ export default {
     },
     methods: {
         open (x, y) {
-            let index = this.panels.findIndex(panel => panel.x === x && panel.y === y);
-            this.panels[index].opened = true;
+            // 存在しないパネルを開けようとしたとき
+            if (this.getPanel(x, y) === undefined) {
+                return;
+            }
+            // 既に開けているパネルを開けようとしたとき
+            if (this.getPanel(x, y).opened === true) {
+                return;
+            }
+            // 最初のクリックが爆弾にならないよう、最初のクリック時に爆弾を埋め込む
+            if (this.gameStatus === 'beforeStart') {
+                this.createMines();
+                this.gameStatus = 'started';
+            }
+            // パネルをオープン
+            this.panels[this.getPanelIndex(x, y)].opened = true;
+            // パネルが爆弾だったとき
+            if (this.getPanel(x, y).mine === true) {
+                console.error('game over');
+                this.gameStatus = 'gameOver';
+                return;
+            }
+            // このパネルの周りに爆弾が１つもないとき、周り８マスは開ける
+            if (this.getNeighborMineNum(x, y) === 0) {
+                this.open(x - 1, y - 1);
+                this.open(x - 1, y);
+                this.open(x - 1, y + 1);
+                this.open(x, y - 1);
+                this.open(x, y + 1);
+                this.open(x + 1, y - 1);
+                this.open(x + 1, y);
+                this.open(x + 1, y + 1);
+            }
         },
         createPanels () {
             this.panels = [];
@@ -50,12 +89,39 @@ export default {
                     this.panels.push({x: x, y: y, opened: false, mine: false});
                 }
             }
+            this.gameStatus = 'beforeStart';
         },
         createMines () {
-
+            // TODO 最初のクリック位置は爆弾としない処理を入れる
+            let remain = this.level.selected.numOfMine;
+            while (remain > 0) {
+                const target = {
+                    x: Math.floor(Math.random() * this.level.selected.x + 1),
+                    y: Math.floor(Math.random() * this.level.selected.y + 1)
+                };
+                if (this.getPanel(target.x, target.y).mine === false) {
+                    this.panels[this.getPanelIndex(target.x, target.y)].mine = true;
+                    remain--;
+                }
+            }
         },
         getPanel (x, y) {
             return this.panels.find(panel => panel.x === x && panel.y === y);
+        },
+        getPanelIndex (x, y) {
+            return this.panels.findIndex(panel => panel.x === x && panel.y === y);
+        },
+        getNeighborMineNum (x, y) {
+            let neighborPanels = this.getNeighborPanels(x, y);
+            return neighborPanels.filter(panel => panel.mine).length;
+        },
+        // 周辺８マスのパネルの状態を取得する
+        getNeighborPanels (x, y) {
+            return this.panels.filter(panel => {
+                return panel.x === x - 1 && (panel.y === y - 1 || panel.y === y || panel.y === y + 1) ||
+                    panel.x === x && (panel.y === y - 1 || panel.y === y + 1) ||
+                    panel.x === x + 1 && (panel.y === y - 1 || panel.y === y || panel.y === y + 1);
+            });
         }
     }
 };
@@ -79,6 +145,10 @@ li {
 
 a {
     color: #42b983;
+}
+
+table {
+    margin: auto;
 }
 
 td {
