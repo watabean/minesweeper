@@ -7,12 +7,18 @@
         <button @click="createPanels">リセット</button>
         <table>
             <tr v-for="y in level.selected.y">
-                <td v-for="x in level.selected.x" @click="open(x, y)" :class="{'opened': getPanel(x, y).opened}">
-                    <template v-if="!getPanel(x, y).opened">　</template>
+                <td v-for="x in level.selected.x" @click="open(x, y)" @contextmenu="setFlag(x, y)" :class="{'opened': getPanel(x, y).opened}">
+                    <!--開けていないパネル-->
+                    <template v-if="!getPanel(x, y).opened">
+                        <template v-if="getPanel(x, y).flag">旗</template>
+                        <template v-else>　</template>
+                    </template>
+                    <!--開けたパネル-->
                     <template v-if="getPanel(x, y).opened && !getPanel(x, y).mine">
                         <template v-if="getNeighborMineNum(x, y) !== 0">{{getNeighborMineNum(x, y)}}</template>
                         <template v-else>　</template>
                     </template>
+                    <!--爆弾-->
                     <template v-if="getPanel(x, y).opened && getPanel(x, y).mine">＊</template>
                 </td>
             </tr>
@@ -57,6 +63,12 @@ export default {
             if (this.getPanel(x, y).opened === true) {
                 return;
             }
+
+            // 旗を立てているパネルを開けようとしたとき
+            if (this.getPanel(x, y).flag === true) {
+                return;
+            }
+
             // 最初のクリックが爆弾にならないよう、最初のクリック時に爆弾を埋め込む
             if (this.gameStatus === 'beforeStart') {
                 this.createMines();
@@ -86,7 +98,7 @@ export default {
             this.panels = [];
             for (let x = 1; x <= this.level.selected.x; x++) {
                 for (let y = 1; y <= this.level.selected.y; y++) {
-                    this.panels.push({x: x, y: y, opened: false, mine: false});
+                    this.panels.push({x: x, y: y, opened: false, mine: false, flag: false});
                 }
             }
             this.gameStatus = 'beforeStart';
@@ -122,6 +134,10 @@ export default {
                     panel.x === x && (panel.y === y - 1 || panel.y === y + 1) ||
                     panel.x === x + 1 && (panel.y === y - 1 || panel.y === y || panel.y === y + 1);
             });
+        },
+        setFlag (x, y) {
+            // フラグを反転させる
+            this.panels[this.getPanelIndex(x, y)].flag = !this.panels[this.getPanelIndex(x, y)].flag;
         }
     }
 };
