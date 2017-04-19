@@ -7,7 +7,7 @@
         <button @click="createPanels">リセット</button>
         <table>
             <tr v-for="y in level.selected.y">
-                <td v-for="x in level.selected.x" @click="open(x, y)" @contextmenu="setFlag(x, y)" :class="{'opened': getPanel(x, y).opened}">
+                <td v-for="x in level.selected.x" @click="open(x, y)" @contextmenu.prevent="setFlag(x, y)" :class="{'opened': getPanel(x, y).opened}">
                     <!--開けていないパネル-->
                     <template v-if="!getPanel(x, y).opened">
                         <template v-if="getPanel(x, y).flag">旗</template>
