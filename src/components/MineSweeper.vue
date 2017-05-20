@@ -56,16 +56,11 @@ export default {
     methods: {
         open (x, y) {
             // 存在しないパネルを開けようとしたとき
-            if (this.getPanel(x, y) === undefined) {
-                return;
-            }
             // 既に開けているパネルを開けようとしたとき
-            if (this.getPanel(x, y).opened === true) {
-                return;
-            }
-
             // 旗を立てているパネルを開けようとしたとき
-            if (this.getPanel(x, y).flag === true) {
+            if (this.getPanel(x, y) === undefined ||
+                this.getPanel(x, y).opened === true ||
+                this.getPanel(x, y).flag === true) {
                 return;
             }
 
@@ -74,14 +69,17 @@ export default {
                 this.createMines();
                 this.gameStatus = 'started';
             }
+
             // パネルをオープン
             this.panels[this.getPanelIndex(x, y)].opened = true;
+
             // パネルが爆弾だったとき
             if (this.getPanel(x, y).mine === true) {
                 console.error('game over');
                 this.gameStatus = 'gameOver';
                 return;
             }
+
             // このパネルの周りに爆弾が１つもないとき、周り８マスは開ける
             if (this.getNeighborMineNum(x, y) === 0) {
                 this.open(x - 1, y - 1);
@@ -105,12 +103,17 @@ export default {
         },
         createMines () {
             // TODO 最初のクリック位置は爆弾としない処理を入れる
+
+            // 爆弾埋め込み残数
             let remain = this.level.selected.numOfMine;
+
             while (remain > 0) {
+                // 爆弾埋め込み場所
                 const target = {
                     x: Math.floor(Math.random() * this.level.selected.x + 1),
                     y: Math.floor(Math.random() * this.level.selected.y + 1)
                 };
+                // 爆弾が埋めてない場所の場合
                 if (this.getPanel(target.x, target.y).mine === false) {
                     this.panels[this.getPanelIndex(target.x, target.y)].mine = true;
                     remain--;
